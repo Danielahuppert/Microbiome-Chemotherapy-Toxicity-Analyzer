@@ -1,108 +1,188 @@
-# Microbiome-Chemotherapy-Toxicity-Analyzer
-A Python tool for exploratory analysis of microbiome associations with chemotherapy toxicity in pediatric leukemia patients.
+# Microbiome–Chemotherapy Toxicity Analyzer
 
 ## Overview
-This project aims to provide a Python-based analysis tool for exploring associations between the gut microbiome and chemotherapy-related symptom severity in pediatric leukemia patients. The tool is designed to support exploratory data analysis by identifying bacterial taxa or molecular features that differ between patients experiencing mild versus severe treatment-related symptoms.
+This project provides a Python-based command-line tool for exploratory analysis of associations between gut microbiome features and chemotherapy-related toxicity severity in pediatric leukemia patients.
 
-The project focuses on building a reusable and transparent data-analysis pipeline that can be applied to microbiome abundance data together with clinical metadata.
+The tool integrates microbiome abundance data with clinical metadata in order to identify bacterial taxa (or other molecular features, such as metabolites) that show differential abundance between patients experiencing mild versus severe treatment-related symptoms.
 
-## Motivation
-Chemotherapy treatment in pediatric leukemia patients is often accompanied by a wide range of side effects, which vary significantly between individuals. Recent studies suggest that the gut microbiome may play a role in modulating treatment toxicity and patient outcomes.
+The analysis pipeline is fully automated, reproducible, and configurable via command-line arguments, making it suitable for repeated use across different datasets and research questions.
 
-In many research settings, initial exploratory analysis of microbiome data is performed manually or using ad hoc scripts. This project aims to automate and standardize this process by providing a simple command-line tool that performs quality checks, group comparisons, and basic statistical analysis in a reproducible manner.
+> **Important note:**  
+> This tool is intended for exploratory data analysis and hypothesis generation only.  
+> It does not provide clinical recommendations and should not be used for diagnostic or therapeutic decision-making.
 
-The tool is intended to be useful for researchers working with microbiome datasets in clinical or pre-clinical studies.
+---
+
+## Scientific Motivation
+Chemotherapy-induced toxicity is a major challenge in pediatric leukemia treatment. While some patients experience relatively mild side effects, others suffer from severe toxicity that can limit treatment intensity or negatively impact quality of life.
+
+Recent research suggests that the gut microbiome may modulate host responses to chemotherapy, influencing inflammation, drug metabolism, and immune function. However, initial microbiome analyses in many labs are often performed using ad hoc scripts or manual workflows, which can be error-prone and difficult to reproduce.
+
+This project aims to address this gap by providing a standardized, transparent, and reusable analysis pipeline that:
+- Performs consistent statistical comparisons
+- Corrects for multiple hypothesis testing
+- Produces interpretable visual summaries
+- Can be easily reused on new datasets without modifying the source code
+
+---
 
 ## Input Data
 
-The tool expects two input files:
+The tool requires **two input files**, provided as CSV or TSV.
 
 ### 1. Microbiome Abundance Table
-A CSV or TSV file where:
-- Rows represent samples
-- Columns represent bacterial taxa or molecular features
+A table where:
+- Each row corresponds to a biological sample
+- Each column (except `SampleID`) represents a bacterial taxon or molecular feature
 - Values represent relative abundances or normalized counts
 
+**Required column:**
+- `SampleID`
+
 Example:
+```text
 SampleID,Bacteroides,Faecalibacterium,Escherichia
-S01,0.34,0.12,0.01
-S02,0.05,0.30,0.10
+S01,0.30,0.12,0.01
+S02,0.05,0.35,0.08
+S03,0.28,0.10,0.02
+2. Clinical Metadata Table
+A table containing sample-level clinical or experimental information.
 
-css
-Copy code
+Required columns:
 
-### 2. Clinical Metadata Table
-A CSV or TSV file containing sample-level clinical information, including a column describing symptom severity.
+SampleID
+
+A grouping column defining symptom severity (default: Severity)
 
 Example:
-SampleID,Severity,Age,Treatment
-S01,Mild,7,ChemoA
-S02,Severe,9,ChemoA
 
-sql
-Copy code
+SampleID,Severity,Age
+S01,Mild,7
+S02,Severe,9
+S03,Mild,6
+The grouping column can be customized (e.g. toxicity grade, response category) using command-line arguments.
 
-## Output
+Analysis Workflow
+The analysis pipeline consists of the following steps:
 
-The tool will generate:
-- A summary table comparing feature abundance between severity groups
-- Statistical test results (e.g. p-values, fold changes)
-- A list of candidate taxa or molecules associated with symptom severity
-- Visualizations such as boxplots and volcano plots
-- Exported CSV files containing analysis results
+Input validation
 
-All output files will be saved to a user-defined output directory.
+Verification of required columns
 
-## Analysis Workflow
+Detection of mismatched or missing sample identifiers
 
-The planned analysis steps include:
-1. Validation of input files and matching sample identifiers
-2. Filtering of low-abundance or rare features
-3. Group comparison between mild and severe symptom groups
-4. Statistical testing (e.g. t-test or Mann–Whitney U test)
-5. Optional correction for multiple hypothesis testing
-6. Visualization of key results
+Data integration
 
-## Usage (Planned Interface)
+Merging of microbiome abundance data with clinical metadata
 
-The tool will be operated via the command line, for example:
+Group definition
 
-```bash
+Separation of samples into two user-defined groups (e.g. Mild vs Severe)
+
+Statistical testing
+
+Feature-wise comparison using the Mann–Whitney U test
+
+Calculation of mean abundance per group
+
+Computation of log2 fold change
+
+Multiple hypothesis correction
+
+Adjustment of p-values using the Benjamini–Hochberg False Discovery Rate (FDR) method
+
+Generation of q-values for downstream interpretation
+
+Visualization
+
+Volcano plot summarizing effect size and statistical significance
+
+Boxplots for the most significant features
+
+Output
+All results are written to a user-specified output directory.
+
+Generated files include:
+results_table.csv
+A summary table containing one row per feature, with the following columns:
+
+Mean abundance in each group
+
+log2 fold change (group2 vs group1)
+
+Raw p-value
+
+FDR-adjusted q-value
+
+volcano_plot.png
+A volcano plot where:
+
+The x-axis represents log2 fold change
+
+The y-axis represents −log10(p-value)
+
+Vertical lines indicate fold-change thresholds
+
+Feature labeling can be controlled via command-line options
+
+Statistical significance is determined using FDR (q-values)
+
+boxplot_<feature>.png
+Boxplots showing the distribution of abundance values across groups for the top-ranked features.
+
+Installation
+Clone the repository and install the required dependencies:
+
+git clone https://github.com/Danielahuppert/Microbiome-Chemotherapy-Toxicity-Analyzer.git
+cd Microbiome-Chemotherapy-Toxicity-Analyzer
+pip install -r requirements.txt
+Usage
+Basic usage (example data)
+python analyze_microbiome.py
+Custom input files
 python analyze_microbiome.py \
-  --abundance microbiome.csv \
-  --metadata metadata.csv \
-  --group_col Severity \
-  --group1 Mild \
-  --group2 Severe \
-  --out results/
-Technical Details
-Programming language: Python 3
+  --abundance data/my_microbiome.csv \
+  --metadata data/my_metadata.csv
+TSV input files
+python analyze_microbiome.py \
+  --abundance data/my_microbiome.tsv \
+  --metadata data/my_metadata.tsv \
+  --sep "\t"
+Volcano plot labeling options
+Label top N features by statistical significance:
 
-Planned libraries:
+python analyze_microbiome.py --label_mode top --top_n 10
+Label only features passing FDR and fold-change thresholds:
 
-pandas
+python analyze_microbiome.py --use_q --q_thresh 0.1 --fc_thresh 1
+Interpretation Guidelines
+Features with low q-values represent statistically significant associations after correcting for multiple testing
 
-numpy
+Effect size (log2 fold change) should be interpreted alongside significance
 
-scipy
-
-matplotlib / seaborn
-
-argparse
-
-The project will be structured as a standalone repository with clear documentation and reproducible execution steps.
+Results should be validated in independent cohorts or follow-up experiments
 
 Scope and Limitations
-This tool is intended for exploratory analysis and hypothesis generation only. It does not provide clinical recommendations and is not designed for diagnostic or therapeutic decision-making.
+Designed for exploratory analysis
+
+Limited statistical power for small sample sizes
+
+Does not model confounding variables
+
+Not suitable for clinical decision-making
 
 Future Extensions
 Possible future improvements include:
 
-Support for additional clinical covariates
+Feature prevalence filtering
 
-Integration with diversity metrics
+Support for longitudinal or repeated-measures data
 
-Automated report generation
+Automated HTML or PDF report generation
 
-Support for longitudinal data
+Integration of diversity metrics and ordination analyses
+
+Course Information
+This project was developed as part of a Python programming course.
+
 
